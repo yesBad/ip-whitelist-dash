@@ -49,13 +49,14 @@ function updateTraefikConfig(updates) {
 app.use(auth(config));
 
 app.get('/', requiresAuth(), (req, res) => {
+    try {
     if (!req?.oidc?.accessToken) return;
     if (req.headers["x-real-ip"] == req.headers["x-forwarded-for"]) {
         console.log(`${req.headers["x-real-ip"]} - ${req?.oidc?.idTokenClaims?.name}`);
         let arr = []; arr.push([req?.oidc?.idTokenClaims?.name, req.headers["x-real-ip"]]);
         updateTraefikConfig(arr);
         res.redirect(redirectee);
-    }
+    }} catch(e) { console.warn(e) }
 });
 
 app.use('/', requiresAuth(), express.static('serve'));
