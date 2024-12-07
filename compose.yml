@@ -1,0 +1,12 @@
+services:
+  node:
+    build: .
+    working_dir: /home/node/app
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./:/home/node/app
+      - ../traefik/dyn-whitelist.toml:/home/node/traefik/dyn-whitelist.toml
+    ports:
+      - "2500:2500"
+    command: "node index.js"
