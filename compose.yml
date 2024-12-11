@@ -1,12 +1,10 @@
 services:
   node:
-    build: .
-    working_dir: /home/node/app
+    image: ghcr.io/yesbad/homelab-dash-oidc-traefik-ip-whitelist-all-the-buzzwords:master
     environment:
       - NODE_ENV=production
     volumes:
-      - ./:/home/node/app
-      - ../traefik/dyn-whitelist.toml:/home/node/traefik/dyn-whitelist.toml
+      - ./config.js:/app/config.js
+      - ../traefik/dyn-whitelist.toml:/app/dyn-whitelist.toml
     ports:
       - "2500:2500"
-    command: "node index.js"
