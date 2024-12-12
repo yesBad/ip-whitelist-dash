@@ -55,8 +55,8 @@ app.get('/', requiresAuth(), (req, res) => {
     try {
         if (!req?.oidc?.accessToken) return;
         if (req.headers["x-real-ip"] == req.headers["x-forwarded-for"]) {
-            console.log(`[${req.headers["x-real-ip"]}] ${req?.oidc?.idTokenClaims?.preferred_username} visited /`);
-            let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username, req.headers["x-real-ip"]]);
+            console.log(`[${req.headers["x-real-ip"]}] ${req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()} visited /`);
+            let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]]);
             updateTraefikConfig(arr);
             res.redirect(redirectee);
         }
