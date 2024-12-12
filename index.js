@@ -63,6 +63,26 @@ app.get('/', requiresAuth(), (req, res) => {
     } catch (e) { console.warn(e) }
 });
 
+app.get('/503', (req, res) => {
+    try {
+        if (req?.oidc?.accessToken) {
+            res.redirect(redirectee);
+            return;
+        };
+        res.send(`
+<html>
+<head>
+<meta http-equiv="refresh" content="0; url=${config.baseURL}" />
+</head>
+<body>
+<p><a href="${config.baseURL}">No permission, login again?</a></p>
+</body>
+</html>
+`)
+    } catch (e) { console.warn(e) }
+});
+
+
 app.use('/', requiresAuth(), express.static('serve'));
 
 app.listen(port, function () {
