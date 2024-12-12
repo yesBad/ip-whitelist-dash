@@ -63,7 +63,7 @@ app.get('/', requiresAuth(), (req, res) => {
     } catch (e) { console.warn(e) }
 });
 
-app.get('/503', (req, res) => {
+app.get('/403', (req, res) => {
     try {
         if (req?.oidc?.accessToken) {
             res.redirect(redirectee);
