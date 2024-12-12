@@ -1,6 +1,7 @@
 "use strict";
 
 const express = require('express');
+//const bodyParser = require('body-parser');
 const { auth, requiresAuth } = require('express-openid-connect');
 const { config, port, redirectee } = require("./config");
 const app = express();
@@ -47,16 +48,19 @@ function updateTraefikConfig(updates) {
 }
 
 app.use(auth(config));
+//app.use(bodyParser.json());
+//app.use(bodyParser.urlencoded({ extended: true })); 
 
 app.get('/', requiresAuth(), (req, res) => {
     try {
-    if (!req?.oidc?.accessToken) return;
-    if (req.headers["x-real-ip"] == req.headers["x-forwarded-for"]) {
-        console.log(`${req.headers["x-real-ip"]} - ${req?.oidc?.idTokenClaims?.name}`);
-        let arr = []; arr.push([req?.oidc?.idTokenClaims?.name, req.headers["x-real-ip"]]);
-        updateTraefikConfig(arr);
-        res.redirect(redirectee);
-    }} catch(e) { console.warn(e) }
+        if (!req?.oidc?.accessToken) return;
+        if (req.headers["x-real-ip"] == req.headers["x-forwarded-for"]) {
+            console.log(`[${req.headers["x-real-ip"]}] ${req?.oidc?.idTokenClaims?.preferred_username} visited /`);
+            let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username, req.headers["x-real-ip"]]);
+            updateTraefikConfig(arr);
+            res.redirect(redirectee);
+        }
+    } catch (e) { console.warn(e) }
 });
 
 app.use('/', requiresAuth(), express.static('serve'));
