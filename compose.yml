@@ -1,6 +1,6 @@
 services:
   node:
-    image: ghcr.io/yesbad/homelab-dash-oidc-traefik-ip-whitelist-all-the-buzzwords:master
+    image: ghcr.io/yesbad/ip-whitelist-dash:master
     environment:
       - NODE_ENV=production
     volumes:
