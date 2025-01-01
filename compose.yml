@@ -7,5 +7,6 @@ services:
       - ./serve:/app/serve
       - ./config.js:/app/config.js
       - ../traefik/dyn-whitelist.toml:/traefik/dyn-whitelist.toml
+      - ../traefik/special-whitelist.toml:/traefik/special-whitelist.toml
     ports:
       - "2500:2500"

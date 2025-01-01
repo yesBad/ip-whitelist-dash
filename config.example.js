@@ -12,7 +12,7 @@ const config = {
     pushedAuthorizationRequests: true,
     authorizationParams: {
         response_type: 'code',
-        scope: 'openid profile email',
+        scope: 'openid profile email groups',
     },
 }
 module.exports = { config, port, redirectee };

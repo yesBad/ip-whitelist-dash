@@ -7,9 +7,10 @@ const { config, port, redirectee } = require("./config");
 const app = express();
 const fs = require('fs');
 const path = require('path');
-const configPath = path.join(__dirname, '../traefik/dyn-whitelist.toml');
+const normies = path.join(__dirname, '../traefik/dyn-whitelist.toml');
+const specials = path.join(__dirname, '../traefik/special-whitelist.toml');
 
-function updateTraefikConfig(updates) {
+function updateTraefikConfig(updates, configPath) {
     let config = fs.readFileSync(configPath, 'utf-8');
     const ipRegex = /sourceRange\s*=\s*\[(.*?)\]/s;
     const commentRegex = /#\s*(.*)/g;
@@ -56,8 +57,12 @@ app.get('/', requiresAuth(), (req, res) => {
         if (!req?.oidc?.accessToken) return;
         if (req.headers["x-real-ip"] == req.headers["x-forwarded-for"]) {
             console.log(`[${req.headers["x-real-ip"]}] ${req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()} visited /`);
+            if(req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) {
+                let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]]);
+                updateTraefikConfig(arr, specials);
+            }
             let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]]);
-            updateTraefikConfig(arr);
+            updateTraefikConfig(arr, normies);
             res.redirect(redirectee);
         }
     } catch (e) { console.warn(e) }
