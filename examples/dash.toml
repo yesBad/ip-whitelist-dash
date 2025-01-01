@@ -2,7 +2,6 @@
 [http.routers.dash]
 rule = "Host(`example.com`)"
 service = "dash"
-middlewares = ["noindex"]
 [[http.services.dash.loadBalancer.servers]]
 url = "http://127.0.0.1:2500"
 
