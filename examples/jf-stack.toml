@@ -1,0 +1,15 @@
+# JF is accessable by IPs in users
+[http.routers.jf]
+rule = "Host(`jf.example.com`)"
+service = "jf"
+middlewares = ["forb", "users"]
+[[http.services.jf.loadBalancer.servers]]
+url = "http://127.0.0.1:8096"
+
+# JF-Admin is accessable by IPs in admins
+[http.routers.jfadmin]
+rule = "Host(`jf-admin.example.com`)"
+service = "jfadmin"
+middlewares = ["forb", "admins"]
+[[http.services.jfadmin.loadBalancer.servers]]
+url = "http://127.0.0.1:666"

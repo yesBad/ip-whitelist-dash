@@ -8,8 +8,4 @@ If the username of the user already exists, but is a different IP address it wil
 
 I made this project public, cause I know someone will have as aftermarket braincells as me and want something like this. For whatever reason it may be. I think it's nice... =)
 
-Example Traefik as follows:
-```toml
-[http.middlewares.dyn.ipWhiteList]
-sourceRange = []
-```
+Example configuration files can be found in [/examples](/examples)

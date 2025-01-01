@@ -1,0 +1,13 @@
+# Dashboard stuff ->
+[http.routers.dash]
+rule = "Host(`example.com`)"
+service = "dash"
+middlewares = ["noindex"]
+[[http.services.dash.loadBalancer.servers]]
+url = "http://127.0.0.1:2500"
+
+# With this middleware if someone gets forbidden on a page with it, they will be redirected back to the dashboard!
+[http.middlewares.forb.errors]
+status = ["403"]
+service = "dash"
+query = "/403"
