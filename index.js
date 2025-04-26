@@ -9,43 +9,67 @@ const path = require('path');
 const normies = path.join(__dirname, '../traefik/dyn-whitelist.toml');
 const specials = path.join(__dirname, '../traefik/special-whitelist.toml');
 
-function updateTraefikConfig(updates, configPath) {
+function updateOrRemoveTraefikConfig({ update = null, remove = null }, configPath) {
     let config = fs.readFileSync(configPath, 'utf-8');
-    const ipRegex = /sourceRange\s*=\s*\[(.*?)\]/s;
-    const commentRegex = /#\s*(.*)/g;
-    let currentIPs = [];
-    let currentComments = [];
 
-    if (ipRegex.test(config)) {
-        currentIPs = ipRegex.exec(config)[1].split(',').map(ip => ip.trim().replace(/["']/g, ''));
+    const sourceRangeRegex = /((?:^\s*#.*\n)*)^\s*(sourceRange\s*=\s*\[(.*?)\])/m;
+
+    const match = config.match(sourceRangeRegex);
+    if (!match) {
+        throw new Error('sourceRange block not found.');
     }
-    config.replace(commentRegex, (_, comment) => currentComments.push(comment.trim()));
+
+    const fullCommentBlock = match[1] || '';
+    const ipListRaw = match[3] || '';
+
+    const usernames = fullCommentBlock
+        .split('\n')
+        .filter(line => line.trim().startsWith('#'))
+        .map(line => line.trim().slice(1).trim());
+
+    const ips = ipListRaw
+        .split(',')
+        .map(ip => ip.trim().replace(/['"]/g, ''))
+        .filter(ip => ip.length > 0);
+
+    if (usernames.length !== ips.length) {
+        if (usernames.length > 0 || ips.length > 0) {
+            throw new Error('Mismatch between number of usernames and IPs.');
+        }
+    }
 
     const existingData = {};
-    currentComments.forEach((username, index) => {
-        existingData[username] = currentIPs[index];
+    usernames.forEach((username, idx) => {
+        existingData[username] = ips[idx];
     });
 
-    for (const [username, ip] of updates) {
-        if (username) existingData[username] = ip;
+    if (update) {
+        const [username, ip] = update;
+        existingData[username] = ip;
     }
 
-    const newIPs = [];
-    const newComments = [];
-
-    for (const [username, ip] of Object.entries(existingData)) {
-        newIPs.push(ip);
-        newComments.push(`# ${username}`);
+    if (remove) {
+        delete existingData[remove];
     }
 
-    const updatedIPList = `sourceRange = [${newIPs.map(ip => `"${ip}"`).join(', ')}]`;
-    const updatedComments = newComments.join('\n');
+    const newUsernames = Object.keys(existingData);
+    const newIPs = Object.values(existingData);
 
-    config = config.replace(ipRegex, updatedIPList);
-    config = updatedComments + '\n' + config.replace(/#.*\n/g, '');
+    let newBlock = '';
 
-    fs.writeFileSync(configPath, config, 'utf-8');
+    if (newUsernames.length > 0) {
+        const newComments = newUsernames.map(username => `# ${username}`).join('\n');
+        const newSourceRange = `sourceRange = [${newIPs.map(ip => `"${ip}"`).join(', ')}]`;
+        newBlock = `${newComments}\n${newSourceRange}`;
+    } else {
+        newBlock = `sourceRange = []`;
+    }
+
+    const updatedConfig = config.replace(sourceRangeRegex, newBlock);
+
+    fs.writeFileSync(configPath, updatedConfig, 'utf-8');
 }
+
 
 app.use(auth(config));
 app.set('views', './views')
@@ -54,7 +78,7 @@ app.set('view engine', 'pug');
 app.get('/categories/:category', requiresAuth(), (req, res) => {
     const category = req.params.category;
     const { Admin, ...tempCat } = categories;
-    if(req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) { res.json(categories[category] || []); return; }
+    if (req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) { res.json(categories[category] || []); return; }
     res.json(tempCat[category] || []);
 });
 
@@ -63,12 +87,16 @@ app.get('/', requiresAuth(), (req, res) => {
         if (!req?.oidc?.accessToken) return;
         if (req.headers["x-real-ip"] == req.headers["x-forwarded-for"]) {
             console.log(`[${req.headers["x-real-ip"]}] [${req?.oidc?.idTokenClaims?.groups.includes("dash_admin")}] ${req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()} visited /`);
-            if(req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) {
-                let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]]);
-                updateTraefikConfig(arr, specials);
+            if (req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) {
+                let arr = [req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]];
+                updateOrRemoveTraefikConfig({
+                    update: arr
+                }, specials);
             }
-            let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]]);
-            updateTraefikConfig(arr, normies);
+            let arr = [req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]];
+            updateOrRemoveTraefikConfig({
+                update: arr
+            }, normies);
             res.redirect(redirectee);
         }
     } catch (e) { console.warn(e) }
@@ -93,13 +121,29 @@ app.get('/403', (req, res) => {
     } catch (e) { console.warn(e) }
 });
 
+app.get('/del-ip', requiresAuth(), (req, res) => {
+    try {
+        if (req?.oidc?.accessToken) {
+            if (req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) {
+                updateOrRemoveTraefikConfig({
+                    remove: req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()
+                }, specials);
+            }
+            updateOrRemoveTraefikConfig({
+                remove: req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()
+            }, normies);
+            res.send("/dash")
+        };
+    } catch (e) { console.warn(e) }
+});
 
 app.get('/dash', requiresAuth(), (req, res) => {
     const { Admin, ...tempCat } = categories;
     console.log(`[${req.headers["x-real-ip"]}] [${req?.oidc?.idTokenClaims?.groups.includes("dash_admin")}] ${req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()} visited /dash `);
-    if(req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) { res.render('index', { activeCategory, categories }); return; }
+    if (req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) { res.render('index', { activeCategory, categories }); return; }
     res.render('index', { activeCategory, categories: tempCat });
 });
+
 app.use('/public', express.static('public'));
 
 app.listen(port, function () {
