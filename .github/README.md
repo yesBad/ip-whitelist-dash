@@ -1,6 +1,8 @@
 A secure "homelab dashboard" that automatically manages IP whitelisting through Traefik & uses OpenID Connect (OIDC) authentication.
 I made this to use with Jellyfin and alike where a VPN setup may not work in all instances (i.e smart TV and alike) and some family members just find such a bit too complicated... :)
 
+![dash](/.github/dash.png)
+
 ## Features
 
 - OIDC authentication integration
