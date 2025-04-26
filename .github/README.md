@@ -1,11 +1,11 @@
-A secure "homelab dashboard" that automatically manages IP whitelisting through Traefik & uses OpenID Connect (OIDC) authentication. I made this to use with Jellyfin and alike where a VPN setup may not work in all instances (i.e smart TV and alike) and some family members just find such a bit too complicated... :)
+A secure "homelab dashboard" that automatically manages IP whitelisting through Traefik & uses OpenID Connect (OIDC) authentication.
+I made this to use with Jellyfin and alike where a VPN setup may not work in all instances (i.e smart TV and alike) and some family members just find such a bit too complicated... :)
 
 ## Features
 
 - OIDC authentication integration
 - Automatic IP whitelist management in Traefik configuration
 - Separate whitelisting for regular users and administrators
-- Static content serving
 - Docker support
 - Automatic IP updates when users' addresses change
 
@@ -39,18 +39,16 @@ The dashboard serves as an authentication gateway that:
 ### Docker Setup
 
 1. Ensure your `compose.yml` mounts the correct volumes:
-   - Static content directory
    - Configuration files
    - Traefik whitelist files
 
 ```yaml
 volumes:
-  - ./serve:/app/serve
   - ./config.js:/app/config.js
   - ../traefik/dyn-whitelist.toml:/traefik/dyn-whitelist.toml
   - ../traefik/special-whitelist.toml:/traefik/special-whitelist.toml
 ```
-*Note: Don't modify the part after the `:`*
+*Note: Don't modify the part after the `:`, except if you modify the config.js port*
 
 ## Installation
 
@@ -63,16 +61,14 @@ docker compose up -d
 
 ### Manual Installation
 
-1. Add a static site at `./serve`
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Start the server:
+1. Start the server:
 ```bash
-node index.js
+npm start
 ```
 
 ## Usage

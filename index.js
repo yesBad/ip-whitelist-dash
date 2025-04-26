@@ -1,9 +1,8 @@
 "use strict";
 
 const express = require('express');
-//const bodyParser = require('body-parser');
 const { auth, requiresAuth } = require('express-openid-connect');
-const { config, port, redirectee } = require("./config");
+const { config, port, redirectee, categories, activeCategory } = require("./config");
 const app = express();
 const fs = require('fs');
 const path = require('path');
@@ -49,14 +48,21 @@ function updateTraefikConfig(updates, configPath) {
 }
 
 app.use(auth(config));
-//app.use(bodyParser.json());
-//app.use(bodyParser.urlencoded({ extended: true })); 
+app.set('views', './views')
+app.set('view engine', 'pug');
+
+app.get('/categories/:category', requiresAuth(), (req, res) => {
+    const category = req.params.category;
+    const { Admin, ...tempCat } = categories;
+    if(req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) { res.json(categories[category] || []); return; }
+    res.json(tempCat[category] || []);
+});
 
 app.get('/', requiresAuth(), (req, res) => {
     try {
         if (!req?.oidc?.accessToken) return;
         if (req.headers["x-real-ip"] == req.headers["x-forwarded-for"]) {
-            console.log(`[${req.headers["x-real-ip"]}] ${req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()} visited /`);
+            console.log(`[${req.headers["x-real-ip"]}] [${req?.oidc?.idTokenClaims?.groups.includes("dash_admin")}] ${req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()} visited /`);
             if(req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) {
                 let arr = []; arr.push([req?.oidc?.idTokenClaims?.preferred_username.toLowerCase(), req.headers["x-real-ip"]]);
                 updateTraefikConfig(arr, specials);
@@ -79,7 +85,7 @@ app.get('/403', (req, res) => {
 <head>
 <meta http-equiv="refresh" content="0; url=${config.baseURL}" />
 </head>
-<body>
+<body style="background-color: #000;>
 <p><a href="${config.baseURL}">No permission, login again?</a></p>
 </body>
 </html>
@@ -88,7 +94,13 @@ app.get('/403', (req, res) => {
 });
 
 
-app.use('/', requiresAuth(), express.static('serve'));
+app.get('/dash', requiresAuth(), (req, res) => {
+    const { Admin, ...tempCat } = categories;
+    console.log(`[${req.headers["x-real-ip"]}] [${req?.oidc?.idTokenClaims?.groups.includes("dash_admin")}] ${req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()} visited /dash `);
+    if(req?.oidc?.idTokenClaims?.groups.includes("dash_admin")) { res.render('index', { activeCategory, categories }); return; }
+    res.render('index', { activeCategory, categories: tempCat });
+});
+app.use('/public', express.static('public'));
 
 app.listen(port, function () {
     console.log(`Base is listening on ${port}.`)

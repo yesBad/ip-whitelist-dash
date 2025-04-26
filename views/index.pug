@@ -1,0 +1,36 @@
+html(class='dark')
+    head
+        link(href='public/styles/style.css' rel='stylesheet')
+        link(rel='icon' type='image/png' href='public/img/dash.png')
+        script(src='public/js/main.js' preload)
+    body(class='min-h-screen bg-black antialiased')
+        div(class='relative flex min-h-screen flex-col')
+            div(class='flex-1')
+                div(class='relative min-h-screen overflow-hidden text-white')
+                    div(class='absolute inset-0 overflow-hidden')
+                        div(class='absolute -top-1/4 -left-1/4 w-1/2 h-1/2 bg-cyan-700 rounded-full filter blur-[100px] opacity-30 animate-pulse')
+                        div(class='absolute -bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-blue-700 rounded-full filter blur-[100px] opacity-30 animate-pulse')
+                        div(class='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-full filter blur-[100px] animate-spin-slow')
+                    div(class='relative z-10 mt-5 lg:mt-0')
+                        section(class='container w-full min-h-screen max-w-full flex flex-col justify-center items-center gap-8 pb-8 pt-6 md:py-10')
+
+                          div(class='flex gap-4 mb-6')
+                            each val, key in categories
+                              button(
+                                class=`px-4 py-2 rounded-lg text-md hover:scale-105 ${
+                                  key === activeCategory ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'
+                                } hover:bg-blue-500 hover:text-white transition`,
+                                data-category=key,
+                                onclick='setActiveCategory(this.dataset.category)'
+                              ) #{key}
+                        
+                          div(id='feature-grid' class='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full')
+                            each feature in categories[activeCategory]
+                              a(href=feature.url)
+                                div(class='bg-white/5 backdrop-blur-xl rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out border border-white/10 aspect-auto h-full')
+                                  img(src=feature.icon alt=`${feature.feature} icon` class='w-12 h-12 mb-4 text-indigo-400')
+                                  h3(class='text-xl font-bold mb-2 text-white') #{feature.feature}
+                                  p(class='text-gray-300')
+                                    each line in feature.desc.split('\n')
+                                      span #{line}
+                                      br
