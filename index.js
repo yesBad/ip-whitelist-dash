@@ -132,7 +132,7 @@ app.get('/del-ip', requiresAuth(), (req, res) => {
             updateOrRemoveTraefikConfig({
                 remove: req?.oidc?.idTokenClaims?.preferred_username.toLowerCase()
             }, normies);
-            res.send("/dash")
+            res.redirect("/dash");
         };
     } catch (e) { console.warn(e) }
 });
